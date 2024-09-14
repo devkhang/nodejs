@@ -2,6 +2,8 @@
 const Tour = require("./../model/TourModel");
 const { Mongoose } = require('mongoose');
 const APIfeature = require('./../utils/apifeature');
+const catchAsync = require('./../utils/catchAsync');
+const AppError = require('./../utils/AppError');
 // const fs = require('fs');
 
 
@@ -12,30 +14,26 @@ exports.aliasTopTour = (req,res,next)=>{
     next();
 }
 
-exports.getTourById = async(req,res)=>{
+exports.getTourById = catchAsync(async(req,res,next)=>{
     // console.log(req.params);
-    try{
-        const Tour1 = await Tour.findById(req.params.id);
+        const Tours = await Tour.findById(req.params.id);
+        if(!Tours){
+            return next(new AppError('can not find this ID in database',404));
+        }
         res.status(200).json({
             status:'success',
             data:{
-                Tour1
+                Tours
             }
         });
-    }catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: err
-        });        
-    }
-};
+});
+
 
 const test = (req, res) => {
     res.send('Welcome to the Tour API!');
 };
 
-exports.getAllTour = async (req, res) => {
-    try {
+exports.getAllTour = catchAsync(async (req, res,next) => {
         // Thực thi query
         const feature = new APIfeature(Tour.find(),req.query)
         .filter()
@@ -43,6 +41,10 @@ exports.getAllTour = async (req, res) => {
         .limitfields()
         .paginate();
         const tours = await feature.query;
+
+        // if(!tours){
+        //     return new AppError('can not find this ID in database',404);
+        // }
 
         // Trả về kết quả
         res.status(200).json({
@@ -53,17 +55,9 @@ exports.getAllTour = async (req, res) => {
                 tours
             }
         });
-    } catch (err) {
-        console.error('Error details:', err);  // In ra lỗi chi tiết để debug
-        res.status(400).json({
-            status: 'fail',
-            message: err.message
-        });
-    }
-};
+})
 
-exports.createTour = async(req,res)=>{
-    try{
+exports.createTour = catchAsync(async(req,res,next)=>{
     const newTour =  await Tour.create(req.body);
 
     res.status(201).json({
@@ -73,89 +67,67 @@ exports.createTour = async(req,res)=>{
             tour:newTour
         }
     })
-    }catch(err){
-        res.status(400).json({
-            status: 'fail',
-            message: err
-        });
-    }
-}
+});
 
-exports.updateTourById = async(req,res)=>{
-    try{
-        const tour = await Tour.findByIdAndUpdate(req.params.id,req.body,{
-            new:true,
-            runValidators:true
-        })
-        res.status(200).json({
-            status:'success',
-            data:{
-                tour
-            }
-        })
-    }catch(err){
-        res.status(400).json({
-            status:'fail',
-            message: err
-        })
+exports.updateTourById = catchAsync(async(req,res,next)=>{
+    const Tours = await Tour.findByIdAndUpdate(req.params.id,req.body,{
+        new:true,
+        runValidators:true
+    })
+    if(!Tours){
+        return next(new AppError('can not find this ID in database',404));
     }
-};
+    res.status(200).json({
+        status:'success',
+        data:{
+            Tours
+        }
+    })
+});
 
-exports.deleteTourById = async(req,res)=>{
-    try{
-        const tour = await Tour.findByIdAndDelete(req.params.id,{projection:{name:1,price:1}});
-        res.status(200).json({
-            status:'success',
-            data:{
-                tour
-            }
-        })
-    }catch(err){
-        res.status(400).json({
-            status:'fail',
-            message: err
-        })
+exports.deleteTourById = catchAsync(async(req,res,next)=>{
+    const Tours = await Tour.findByIdAndDelete(req.params.id,{projection:{name:1,price:1}});
+    if(!Tours){
+        return new AppError('can not find this ID in database',404);
     }
-};
+    res.status(200).json({
+        status:'success',
+        data:{
+            Tours
+        }
+    })
+})
 
-exports.getTourstats =  async(req,res)=>{
-    try{
-        const stats = await Tour.aggregate([
-            {
-                $match:{ratingsAverage:{$gte:4.5}}
-            },
-            {
-                $group:{
-                    _id:{$toUpper:'$difficulty'},
-                    count:{$sum:1},
-                    sumquantity:{$sum:'$ratingsQuantity'},
-                    avgRating:{$avg:'$ratingsAverage'},
-                    avgprice:{$avg:'$price'},
-                    minprice:{$min:'$price'},
-                    maxprice:{$max:'$price'}
-                }
-            },
-            {
-                $sort:{avgprice:1}
+exports.getTourstats =  catchAsync(async(req,res,next)=>{
+    const stats = await Tour.aggregate([
+        {
+            $match:{ratingsAverage:{$gte:4.5}}
+        },
+        {
+            $group:{
+                _id:{$toUpper:'$difficulty'},
+                count:{$sum:1},
+                sumquantity:{$sum:'$ratingsQuantity'},
+                avgRating:{$avg:'$ratingsAverage'},
+                avgprice:{$avg:'$price'},
+                minprice:{$min:'$price'},
+                maxprice:{$max:'$price'}
             }
-        ]);
-        res.status(200).json({
-            status:'success',
-            length: stats.length,
-            data:{
-                stats
-            }
-        })
-    }catch(err){
-        res.status(400).json({
-            status:'fail',
-            message: err
-        })        
-    }
-}
+        },
+        {
+            $sort:{avgprice:1}
+        }
+    ]);
+    res.status(200).json({
+        status:'success',
+        length: stats.length,
+        data:{
+            stats
+        }
+    })
+})
 
-exports.getMonthlyPlan = async(req,res)=>{
-    try{
+exports.getMonthlyPlan = catchAsync(async(req,res,next)=>{
         const year = req.params.year*1;
         const Plan = await Tour.aggregate([
             {
@@ -197,10 +169,4 @@ exports.getMonthlyPlan = async(req,res)=>{
                 Plan
             }
         })
-    }catch(err){
-        res.status(400).json({
-            status:'fail',
-            message: err
-        })  
-    }
-}
+})
