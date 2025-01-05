@@ -1,7 +1,6 @@
 const AppError = require('./../utils/AppError');
 
 const handleCastErrorDB = err =>{
-    console.log("haha");
     const message = `invalid ${err.path}:${err.value}`;
     return new AppError(message,400);
 };
@@ -10,7 +9,7 @@ const handleDuplicateFieldsDB = err => {
     // console.log(err);
     // Giả sử `keyValue` chứa giá trị trường bị trùng lặp.
     // Lấy giá trị trùng lặp đầu tiên (nếu có nhiều hơn một trường bị trùng)
-    const value = Object.values(err.keyValue)[0];
+    const value = Object.values(err.keyValue);
 
     // Tạo thông báo lỗi với giá trị trùng lặp được tìm thấy
     const message = `Duplicate field value: ${value}. Please use another value!`;

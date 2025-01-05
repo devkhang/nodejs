@@ -15,7 +15,6 @@ exports.aliasTopTour = (req,res,next)=>{
 }
 
 exports.getTourById = catchAsync(async(req,res,next)=>{
-    // console.log(req.params);
         const Tours = await Tour.findById(req.params.id);
         if(!Tours){
             return next(new AppError('can not find this ID in database',404));
