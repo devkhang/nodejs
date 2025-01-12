@@ -4,6 +4,7 @@ const { Mongoose } = require('mongoose');
 const APIfeature = require('./../utils/apifeature');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/AppError');
+const Review = require('../model/ReviewModel');
 // const fs = require('fs');
 
 
@@ -15,7 +16,7 @@ exports.aliasTopTour = (req,res,next)=>{
 }
 
 exports.getTourById = catchAsync(async(req,res,next)=>{
-        const Tours = await Tour.findById(req.params.id);
+        const Tours = await Tour.findById(req.params.id).populate('Reviews');
         if(!Tours){
             return next(new AppError('can not find this ID in database',404));
         }

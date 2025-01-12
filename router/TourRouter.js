@@ -1,6 +1,8 @@
 const express = require('express');
 const Router = express.Router();
+const authController = require('../controller/authController');
 const TourController = require('./../controller/TourController');
+const ReviewController = require('../controller/ReviewController');
 
 Router.param('id',(req,res,next,val)=>{
     console.log(`id in param ${val}`);
@@ -14,6 +16,8 @@ Router.route('/top-5-cheap').get(TourController.aliasTopTour,TourController.getA
 
 Router.route('/').get(TourController.getAllTour).post(TourController.createTour);
 
-Router.route('/:id').get(TourController.getTourById).patch(TourController.updateTourById).delete(TourController.deleteTourById);
+Router.route('/:id').get(TourController.getTourById).patch(TourController.updateTourById).delete(authController.Protect,authController.restrictTo('admin','lead-guide'),TourController.deleteTourById);
+
+Router.route('/:TourId/Review').post(authController.Protect,authController.restrictTo('user'),ReviewController.CreateNewReview)
 
 module.exports = Router;

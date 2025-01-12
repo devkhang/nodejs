@@ -5,6 +5,14 @@ const handleCastErrorDB = err =>{
     return new AppError(message,400);
 };
 
+const handleJWTTokenExpired = ()=>{
+    return new AppError("You Token has Expire! please log in again",401);
+}
+
+const handleJWTInvalidToken = ()=>{
+    return new AppError("Invalid token! please log in again",401);
+}
+
 const handleDuplicateFieldsDB = err => {
     // console.log(err);
     // Giả sử `keyValue` chứa giá trị trường bị trùng lặp.
@@ -60,6 +68,8 @@ module.exports = (err, req, res, next) => {
         if(error.name === 'CastError') error = handleCastErrorDB(error);
         if(error.code === 11000) error = handleDuplicateFieldsDB(error);
         if (error.name === 'ValidationError')error = handleValidationErrorDB(error);
+        if(error.name === 'JsonWebTokenError')error = handleJWTInvalidToken();
+        if(error.name === 'TokenExpiredError')error = handleJWTTokenExpired();
         SendErrorProd(error,res);
     }
 }

@@ -18,6 +18,7 @@ class APIfeature {
 
     sort(){
         if (this.queryString.sort) {
+            console.log(this.queryString.sort);
             const SortBy = this.queryString.sort.split(',').join(' ');
             console.log('Sort By:', SortBy);  // Kiểm tra giá trị của SortBy
             this.query = this.query.sort(SortBy);

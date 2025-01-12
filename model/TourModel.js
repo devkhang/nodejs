@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator');
+const User = require('../model/UserModel');
+const { promises } = require('nodemailer/lib/xoauth2');
+const Review = require('./ReviewModel')
 
 const Tourschema = new mongoose.Schema({
     name:{
@@ -10,7 +13,7 @@ const Tourschema = new mongoose.Schema({
         trim:true,
         minlength:[10,'tour name must have more or equal than 10 character'],
         maxlength:[40,'tour name must have less or equal than 40 character'],
-        validate: [validator.isAlpha,'a tour must only have character']
+        //validate: [validator.isAlpha,'a tour must only have character']
     },
     slug:String,
     duration:{
@@ -78,7 +81,38 @@ const Tourschema = new mongoose.Schema({
         default:Date.now(),
         select:false
     },
-    startDates:[Date]
+    startDates:[Date],
+    secretTour: {
+        type: Boolean,
+        default: false
+    },
+    startLocation:{
+        type:{
+            type:String,
+            default:'Point',
+            enum:['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String
+    },
+    locations: [
+        {
+          type: {
+            type: String,
+            default: 'Point',
+            enum: ['Point']
+          },
+          coordinates: [Number],
+          address: String,
+          description: String,
+          day: Number
+        }
+    ],
+    guides: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 },{
     toJSON:{virtuals:true},
     toObject:{virtuals:true}
@@ -87,6 +121,12 @@ const Tourschema = new mongoose.Schema({
 Tourschema.virtual('durationweek').get(function(){
     return this.duration/7;
 })
+
+Tourschema.virtual('Reviews',{
+    ref:'Review',
+    localField:'_id',
+    foreignField:'tour'
+});
 
 Tourschema.pre('save',function(next){
     this.slug = slugify(this.name,{lower:true,strict:true});
@@ -99,7 +139,18 @@ Tourschema.pre(/^find/,function(next){
     next();
 })
 
-
+// Tourschema.pre('save',async function(next){
+//     const guidePromise = this.guides.map(async(id) =>await User.findById(id));
+//     this.guides = await Promise.all(guidePromise);
+//     next();
+// })
+Tourschema.pre(/^find/,function(next){
+    this.populate({
+        path:"guides",
+        select: "-__v -passwordChangedAt"
+    })
+    next();
+})
 
 Tourschema.post(/^find/,function(docs, next) {
     console.log(`Query took ${Date.now() - this.start} milliseconds!`);
